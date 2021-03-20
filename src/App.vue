@@ -3,18 +3,25 @@
     <button @click="myAnimation ='slide'">Slide</button>
     <button @click="myAnimation ='fade'">Fade</button>
     <p>{{myAnimation}}</p>
+    <br>
+    <button @click="add">追加</button>
+    <ul style="width: 200px; margin: auto;">
+      <transition-group name="fade" tag="div">
+      <li 
+        style="cursor: pointer;"
+        v-for="(number,index) in numbers"
+        :key="number"
+        @click="remove(index)"
+      >{{number}}</li>
+      </transition-group>
+    </ul>
     <button @click="show = !show">切り替え</button>
     <br><br>
     <transition
+      :css="false"
       @before-enter="beforeEnter"
-      @enter="Enter"
-      @after-enter="afterEnter"
-      @enter-cancelled="enterCancelled"
-
-      @before-enter="beforeLeave"
+      @enter="enter"
       @leave="leave"
-      @after-leave="afterLeave"
-      @leave-cancelled="leaveCancelled"
     >
       <div class="circle" v-if="show"></div>
     </transition>
@@ -57,20 +64,49 @@ export default {
   },
   data(){
     return {
+      numbers:[0,1,2],
+      nextNumber: 3,
       show :true,
       myAnimation: 'slide',
       myComponent: "ComponentA"
     }
   },
   methods:{
-    beforeEnter(){},
-    enter(){},
-    afterEnter(){},
-    enterCancelled(){},
-    beforeLeave(){},
-    leave(){},
-    afterLeave(){},
-    leaveCancelled(){},
+    randomIndex() {
+      return Math.floor(Math.random() * this.numbers.length);
+    },
+    add() {
+      this.numbers.splice(this.randomIndex(), 0, this.nextNumber);
+      this.nextNumber += 1;
+    },
+    remove(index) {
+      this.numbers.splice(index, 1);
+    },
+    beforeEnter(el){
+      el.style.transform = `scale(0)`
+    },
+    enter(el,done){
+      let scale = 0;
+      const interval = setInterval(()=>{
+        el.style.transform = `scale(${scale})`;
+        scale += 0.1
+        if(scale > 1){
+          clearInterval(interval);
+          done();
+        }
+      },200)
+    },
+    leave(el,done){
+      let scale = 1;
+      const interval = setInterval(()=>{
+        el.style.transform = `scale(${scale})`;
+        scale -= 0.1
+        if(scale < 0){
+          clearInterval(interval);
+          done();
+        }
+      },200)
+    },
   }
 }
 </script>
@@ -83,16 +119,34 @@ export default {
   border-radius: 100px;
   background-color: deeppink;
 }
-.fade-enter,
-.fade-leave-to {
+.fade-move {
+  transition: transform 1s;
+}
+.fade-enter {
+  /* 現れる時の最初の状態 */
   opacity: 0;
 }
 .fade-enter-active {
-  animation: slide-in 0.5s;
-  transition: opacity 1s;
+  /* 現れる時のトランジションの状態 */
+  transition: opacity 0.5s;
+}
+.fade-enter-to {
+  /*  現れる時の最後の状態 */
+  opacity: 1;
+}
+.fade-leave {
+  /* 消える時の最初の状態 */
+  opacity: 1;
 }
 .fade-leave-active {
-  animation: slide-in 1s reverse;
+  /* 消える時のトランジションの状態 */
+  transition: opacity 1s;
+  position: absolute;
+  width: 200px;
+}
+.fade-leave-to {
+  /*  消える時の最後の状態 */
+  opacity: 0;
 }
 .slide-enter,
 .slide-leave-to {
@@ -103,7 +157,8 @@ export default {
   transition: opacity 1s;
 }
 .slide-leave-active {
-  animation: slide-in 1s reverse;
+  animation: slide-in 0.5s reverse;
+  transition: opacity 1s;
 }
 
 @keyframes slide-in {
